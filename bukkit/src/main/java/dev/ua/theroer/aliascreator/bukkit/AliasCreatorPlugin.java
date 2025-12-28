@@ -18,6 +18,7 @@ public final class AliasCreatorPlugin extends JavaPlugin {
     private AliasBukkitRegistrar aliasRegistrar;
     private AliasController controller;
     private Logger logger;
+    private CommandRegistry commandRegistry;
 
     @Override
     public void onEnable() {
@@ -40,11 +41,11 @@ public final class AliasCreatorPlugin extends JavaPlugin {
             getLogger().info("Aliases reloaded (" + aliasService.snapshot().size() + ").");
         });
 
-        CommandRegistry.initialize(this, "aliascreator", logger);
+        commandRegistry = CommandRegistry.create(this, "aliascreator", logger);
         AliasCommand aliasCommand = new AliasCommand(controller,
                 new BukkitTargetSuggestionProvider(() -> config.isTargetNamespaced()));
-        aliasCommand.addSubCommand(HelpCommandSupport.createHelpSubCommand(logger.getCore(), CommandRegistry::getCommandManager));
-        CommandRegistry.registerAll(aliasCommand);
+        aliasCommand.addSubCommand(HelpCommandSupport.createHelpSubCommand(logger.getCore(), commandRegistry::commandManager));
+        commandRegistry.registerAllCommands(aliasCommand);
 
         getLogger().info("Loaded " + aliasService.snapshot().size() + " aliases.");
     }

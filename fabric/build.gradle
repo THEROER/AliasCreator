@@ -12,9 +12,9 @@ dependencies {
     mappings "net.fabricmc:yarn:${yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    modImplementation "dev.ua.theroer:magicutils-fabric:${magicutils_version}"
-    modImplementation "dev.ua.theroer:magicutils-commands-fabric:${magicutils_version}"
-    modImplementation "dev.ua.theroer:magicutils-logger-fabric:${magicutils_version}"
+    include("dev.ua.theroer:magicutils-fabric-bundle:${magicutils_version}")
+    modCompileOnly "dev.ua.theroer:magicutils-fabric-bundle:${magicutils_version}:dev"
+    modRuntimeOnly "dev.ua.theroer:magicutils-fabric-bundle:${magicutils_version}:dev"
 
     implementation project(':common')
 }

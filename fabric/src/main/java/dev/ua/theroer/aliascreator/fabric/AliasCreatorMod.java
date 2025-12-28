@@ -26,6 +26,7 @@ public final class AliasCreatorMod implements ModInitializer {
     private AliasFabricRegistrar aliasRegistrar;
     private AliasController controller;
     private dev.ua.theroer.magicutils.Logger magicLogger;
+    private CommandRegistry commandRegistry;
 
     @Override
     public void onInitialize() {
@@ -56,15 +57,15 @@ public final class AliasCreatorMod implements ModInitializer {
             }
         });
 
-        CommandRegistry.initialize("aliascreator", "aliascreator", magicLogger);
+        commandRegistry = CommandRegistry.create("aliascreator", "aliascreator", magicLogger, 2);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             aliasRegistrar.registerDispatcher(dispatcher);
             aliasRegistrar.applyAliases(config.getAliases());
             AliasCommand aliasCommand = new AliasCommand(controller,
                     new FabricTargetSuggestionProvider(serverRef::get, () -> config.isTargetNamespaced()));
             aliasCommand.addSubCommand(HelpCommandSupport.createHelpSubCommand(magicLogger.getCore(),
-                    CommandRegistry::getCommandManager));
-            CommandRegistry.registerAll(dispatcher, aliasCommand);
+                    commandRegistry::commandManager));
+            commandRegistry.registerAllCommands(dispatcher, aliasCommand);
         });
     }
 }
