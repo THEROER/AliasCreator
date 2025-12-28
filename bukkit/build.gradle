@@ -1,0 +1,50 @@
+plugins {
+    id 'java-library'
+    id 'com.gradleup.shadow' version '8.3.5'
+    id 'xyz.jpenilla.run-paper' version '2.3.1'
+}
+
+base {
+    archivesName = 'aliascreator-bukkit'
+}
+
+dependencies {
+    compileOnly "io.papermc.paper:paper-api:${paper_api_version}"
+    implementation "dev.ua.theroer:magicutils-bukkit:${magicutils_version}"
+    implementation "dev.ua.theroer:magicutils-config-yaml:${magicutils_version}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.17.1"
+    implementation "com.fasterxml.jackson.core:jackson-core:2.17.1"
+    implementation "com.fasterxml.jackson.core:jackson-annotations:2.17.1"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.1"
+    implementation project(':common')
+}
+
+tasks.processResources {
+    def props = [version: project.version]
+    inputs.properties(props)
+    filteringCharset = 'UTF-8'
+    filesMatching(['plugin.yml']) {
+        expand(props)
+    }
+}
+
+tasks.named('jar') {
+    archiveClassifier.set('plain')
+    from project(':common').sourceSets.main.output
+}
+
+tasks.shadowJar {
+    archiveClassifier.set('')
+    mergeServiceFiles()
+    relocate 'com.fasterxml.jackson', 'dev.ua.theroer.aliascreator.libs.jackson'
+}
+
+tasks.build.dependsOn tasks.shadowJar
+
+tasks {
+    runServer {
+        dependsOn tasks.shadowJar
+        pluginJars(tasks.shadowJar.archiveFile)
+        minecraftVersion("1.21.8")
+    }
+}

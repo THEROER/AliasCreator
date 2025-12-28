@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "aliascreator",
+  "version": "${version}",
+  "name": "AliasCreator",
+  "description": "Create command aliases.",
+  "authors": ["THEROER"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "dev.ua.theroer.aliascreator.fabric.AliasCreatorMod"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "1.21.10",
+    "fabric-api": "*",
+    "magicutils": "*",
+    "magicutils-commands-fabric": "*",
+    "magicutils-logger-fabric": "*"
+  }
+}

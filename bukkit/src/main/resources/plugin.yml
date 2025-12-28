@@ -1,0 +1,6 @@
+name: AliasCreator
+version: ${version}
+main: dev.ua.theroer.aliascreator.bukkit.AliasCreatorPlugin
+api-version: '1.21'
+author: THEROER
+description: Create command aliases.
