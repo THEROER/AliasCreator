@@ -16,6 +16,7 @@ public final class AliasCreatorPlugin extends JavaPlugin {
     private ConfigManager configManager;
     private AliasCreatorConfig config;
     private AliasBukkitRegistrar aliasRegistrar;
+    private AliasTemplateCommandRegistrar templateRegistrar;
     private AliasController controller;
     private Logger logger;
     private CommandRegistry commandRegistry;
@@ -38,16 +39,25 @@ public final class AliasCreatorPlugin extends JavaPlugin {
             }
             aliasService.replace(updated.getAliases());
             aliasRegistrar.applyAliases(updated.getAliases());
-            getLogger().info("Aliases reloaded (" + aliasService.snapshot().size() + ").");
+            if (templateRegistrar != null) {
+                templateRegistrar.applyTemplates(updated.getTemplateAliases());
+            }
+            int count = aliasService.snapshot().size()
+                    + (updated.getTemplateAliases() != null ? updated.getTemplateAliases().size() : 0);
+            getLogger().info("Aliases reloaded (" + count + ").");
         });
 
         commandRegistry = CommandRegistry.create(this, "aliascreator", logger);
+        templateRegistrar = new AliasTemplateCommandRegistrar(commandRegistry);
+        templateRegistrar.applyTemplates(config.getTemplateAliases());
         AliasCommand aliasCommand = new AliasCommand(controller,
                 new BukkitTargetSuggestionProvider(() -> config.isTargetNamespaced()));
         aliasCommand.addSubCommand(HelpCommandSupport.createHelpSubCommand(logger.getCore(), commandRegistry::commandManager));
         commandRegistry.registerAllCommands(aliasCommand);
 
-        getLogger().info("Loaded " + aliasService.snapshot().size() + " aliases.");
+        int count = aliasService.snapshot().size()
+                + (config.getTemplateAliases() != null ? config.getTemplateAliases().size() : 0);
+        getLogger().info("Loaded " + count + " aliases.");
     }
 
     @Override

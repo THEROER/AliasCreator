@@ -31,10 +31,36 @@ public class AliasCreatorConfig {
     @Comment("Alias groups (target command, aliases list, permission)")
     private List<AliasEntry> aliases = defaults();
 
+    @ConfigValue("template-aliases")
+    @Comment("Template aliases with arguments and placeholder replacements")
+    private List<AliasTemplateEntry> templateAliases = templateDefaults();
+
     private static List<AliasEntry> defaults() {
         List<AliasEntry> list = new ArrayList<>();
         list.add(new AliasEntry("/spawn", List.of("spawn"), "aliascreator.alias.spawn"));
         list.add(new AliasEntry("/server hub", List.of("hub", "lobby"), "aliascreator.alias.hub"));
+        return list;
+    }
+
+    private static List<AliasTemplateEntry> templateDefaults() {
+        List<AliasTemplateEntry> list = new ArrayList<>();
+
+        AliasTemplateArgument item = new AliasTemplateArgument();
+        item.setName("item");
+        item.setValues(List.of("minecraft:elytra"));
+
+        AliasTemplateArgument count = new AliasTemplateArgument();
+        count.setName("count");
+        count.setOptional(true);
+        count.setDefaultValue("1");
+
+        AliasTemplateEntry entry = new AliasTemplateEntry();
+        entry.setAlias("agive");
+        entry.setTarget("minecraft:give @s minecraft:totem_of_undying[item_model=\"{item}\"] {count}");
+        entry.setPermission("aliascreator.alias.agive");
+        entry.setArgs(List.of(item, count));
+
+        list.add(entry);
         return list;
     }
 }

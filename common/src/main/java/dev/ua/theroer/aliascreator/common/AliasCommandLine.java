@@ -47,4 +47,15 @@ public final class AliasCommandLine {
         }
         return base + " " + tail;
     }
+
+    public static String[] splitArgs(String args) {
+        if (args == null) {
+            return new String[0];
+        }
+        String trimmed = args.trim();
+        if (trimmed.isEmpty()) {
+            return new String[0];
+        }
+        return trimmed.split("\\s+");
+    }
 }

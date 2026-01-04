@@ -55,11 +55,8 @@ final class AliasBukkitRegistrar {
 
         for (String alias : aliases) {
             if (knownCommands.containsKey(alias)) {
-                Command existing = knownCommands.get(alias);
-                if (!isOwned(existing)) {
-                    plugin.getLogger().warning("Alias '" + alias + "' already exists, skipping.");
-                    continue;
-                }
+                plugin.getLogger().warning("Alias '" + alias + "' already exists, skipping.");
+                continue;
             }
             AliasForwardCommand command = new AliasForwardCommand(alias, plugin, aliasService);
             commandMap.register(plugin.getName().toLowerCase(Locale.ROOT), command);
@@ -82,13 +79,6 @@ final class AliasBukkitRegistrar {
         knownCommands.remove(plugin.getName().toLowerCase(Locale.ROOT) + ":" + alias);
     }
 
-    private boolean isOwned(Command command) {
-        if (command instanceof PluginIdentifiableCommand pic) {
-            return pic.getPlugin() == plugin;
-        }
-        return command != null && command.getClass().getSimpleName().contains("AliasForwardCommand");
-    }
-
     private static CommandMap resolveCommandMap() {
         try {
             Field field = Bukkit.getServer().getClass().getDeclaredField("commandMap");
@@ -104,13 +94,19 @@ final class AliasBukkitRegistrar {
         if (map == null) {
             return null;
         }
-        try {
-            Field field = map.getClass().getDeclaredField("knownCommands");
-            field.setAccessible(true);
-            return (Map<String, Command>) field.get(map);
-        } catch (ReflectiveOperationException e) {
-            return new HashMap<>();
+        Class<?> current = map.getClass();
+        while (current != null && current != Object.class) {
+            try {
+                Field field = current.getDeclaredField("knownCommands");
+                field.setAccessible(true);
+                return (Map<String, Command>) field.get(map);
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            } catch (ReflectiveOperationException e) {
+                return new HashMap<>();
+            }
         }
+        return new HashMap<>();
     }
 
     private static final class AliasForwardCommand extends Command implements PluginIdentifiableCommand {

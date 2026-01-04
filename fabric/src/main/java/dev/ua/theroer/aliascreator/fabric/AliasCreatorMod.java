@@ -4,6 +4,7 @@ import dev.ua.theroer.aliascreator.common.AliasController;
 import dev.ua.theroer.aliascreator.common.AliasService;
 import dev.ua.theroer.aliascreator.common.commands.AliasCommand;
 import dev.ua.theroer.aliascreator.common.config.AliasCreatorConfig;
+import dev.ua.theroer.magicutils.Logger;
 import dev.ua.theroer.magicutils.commands.CommandRegistry;
 import dev.ua.theroer.magicutils.commands.HelpCommandSupport;
 import dev.ua.theroer.magicutils.config.ConfigManager;
@@ -12,28 +13,27 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 public final class AliasCreatorMod implements ModInitializer {
-    private static final Logger LOGGER = LoggerFactory.getLogger("AliasCreator");
     private final AliasService aliasService = new AliasService();
     private final AtomicReference<MinecraftServer> serverRef = new AtomicReference<>();
     private ConfigManager configManager;
     private AliasCreatorConfig config;
     private AliasFabricRegistrar aliasRegistrar;
+    private AliasTemplateCommandRegistrar templateRegistrar;
     private AliasController controller;
-    private dev.ua.theroer.magicutils.Logger magicLogger;
+    private Logger magicLogger;
     private CommandRegistry commandRegistry;
 
     @Override
     public void onInitialize() {
-        FabricPlatformProvider platform = new FabricPlatformProvider(serverRef::get, LOGGER);
+        FabricPlatformProvider platform = new FabricPlatformProvider(serverRef::get, LoggerFactory.getLogger("AliasCreator"));
         configManager = new ConfigManager(platform);
         config = configManager.register(AliasCreatorConfig.class);
-        magicLogger = new dev.ua.theroer.magicutils.Logger(platform, configManager, "AliasCreator");
+        magicLogger = new Logger(platform, configManager, "AliasCreator");
 
         aliasService.replace(config.getAliases());
         aliasRegistrar = new AliasFabricRegistrar(aliasService, serverRef::get);
@@ -46,7 +46,12 @@ public final class AliasCreatorMod implements ModInitializer {
             }
             aliasService.replace(updated.getAliases());
             aliasRegistrar.applyAliases(updated.getAliases());
-            LOGGER.info("Aliases reloaded ({}).", aliasService.snapshot().size());
+            if (templateRegistrar != null) {
+                templateRegistrar.applyTemplates(updated.getTemplateAliases());
+            }
+            int count = aliasService.snapshot().size()
+                    + (updated.getTemplateAliases() != null ? updated.getTemplateAliases().size() : 0);
+            magicLogger.info("Aliases reloaded ({}).", count);
         });
 
         ServerLifecycleEvents.SERVER_STARTING.register(serverRef::set);
@@ -58,9 +63,13 @@ public final class AliasCreatorMod implements ModInitializer {
         });
 
         commandRegistry = CommandRegistry.create("aliascreator", "aliascreator", magicLogger, 2);
+        templateRegistrar = new AliasTemplateCommandRegistrar("aliascreator", "aliascreator",
+                magicLogger, 2, serverRef::get);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             aliasRegistrar.registerDispatcher(dispatcher);
             aliasRegistrar.applyAliases(config.getAliases());
+            templateRegistrar.registerDispatcher(dispatcher);
+            templateRegistrar.applyTemplates(config.getTemplateAliases());
             AliasCommand aliasCommand = new AliasCommand(controller,
                     new FabricTargetSuggestionProvider(serverRef::get, () -> config.isTargetNamespaced()));
             aliasCommand.addSubCommand(HelpCommandSupport.createHelpSubCommand(magicLogger.getCore(),

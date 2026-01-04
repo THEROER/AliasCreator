@@ -19,11 +19,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-@CommandInfo(
-        name = "aliascreator",
-        aliases = {"alias", "ac"},
-        description = "Manage command aliases"
-)
+@CommandInfo(name = "aliascreator", aliases = { "alias", "ac" }, description = "Manage command aliases")
 public final class AliasCommand extends MagicCommand {
     private final AliasController controller;
     private final TargetSuggestionProvider targetSuggestions;
@@ -64,8 +60,8 @@ public final class AliasCommand extends MagicCommand {
 
     @SubCommand(name = "set", description = "Create or update an alias", aliases = "create")
     public CommandResult set(@Sender MagicSender sender,
-                             @Suggest("getAliasSuggestions") String alias,
-                             @Suggest("getTargetSuggestions") @Greedy String target) {
+            @Suggest("getAliasSuggestions") String alias,
+            @Suggest("getTargetSuggestions") @Greedy String target) {
         if (!controller.setAlias(alias, target)) {
             return CommandResult.failure("Invalid alias or target", false);
         }
@@ -74,17 +70,17 @@ public final class AliasCommand extends MagicCommand {
 
     @SubCommand(name = "perm", description = "Set permission for an alias")
     public CommandResult permission(@Sender MagicSender sender,
-                                    @Suggest("getAliasSuggestions") String alias,
-                                    @DefaultValue("-") String permission) {
+            @Suggest("getAliasSuggestions") String alias,
+            @DefaultValue("-") String permission) {
         if (!controller.setPermission(alias, permission)) {
             return CommandResult.failure("Alias not found", false);
         }
         return CommandResult.success("Permission updated", false);
     }
 
-    @SubCommand(name = "remove", aliases = {"delete"}, description = "Remove an alias")
+    @SubCommand(name = "remove", aliases = { "delete" }, description = "Remove an alias")
     public CommandResult remove(@Sender MagicSender sender,
-                                @Suggest("getAliasSuggestions") String alias) {
+            @Suggest("getAliasSuggestions") String alias) {
         if (!controller.removeAlias(alias)) {
             return CommandResult.failure("Alias not found", false);
         }

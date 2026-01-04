@@ -12,17 +12,26 @@ dependencies {
     mappings "net.fabricmc:yarn:${yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${loader_version}"
     modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
-    include("dev.ua.theroer:magicutils-fabric-bundle:${magicutils_version}")
-    modCompileOnly "dev.ua.theroer:magicutils-fabric-bundle:${magicutils_version}:dev"
-    modRuntimeOnly "dev.ua.theroer:magicutils-fabric-bundle:${magicutils_version}:dev"
+    def magicutilsDep = "dev.ua.theroer:magicutils-fabric-bundle:${magicutils_version}"
+    def magicutilsDevDep = "${magicutilsDep}:dev"
+    def magicutilsEmbed = (findProperty('magicutils_embed') ?: 'true').toBoolean()
+    if (magicutilsEmbed) {
+        include(magicutilsDep)
+        modCompileOnly magicutilsDevDep
+        modRuntimeOnly magicutilsDevDep
+    } else {
+        modImplementation magicutilsDevDep
+    }
 
     implementation project(':common')
 }
 
 tasks.processResources {
     inputs.property 'version', project.version
+    inputs.property 'magicutils_version', project.property('magicutils_version')
     filesMatching('fabric.mod.json') {
-        expand(version: project.version)
+        expand(version: project.version,
+                magicutils_version: project.property('magicutils_version'))
     }
 }
 
