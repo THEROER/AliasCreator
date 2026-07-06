@@ -14,10 +14,11 @@ import dev.ua.theroer.aliascreator.common.AliasService;
 import dev.ua.theroer.aliascreator.common.config.AliasEntry;
 import dev.ua.theroer.magicutils.commands.FabricCommandPlatform;
 import dev.ua.theroer.magicutils.commands.MagicPermissionDefault;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
@@ -36,7 +37,7 @@ final class AliasFabricRegistrar {
     private final AliasService aliasService;
     private final Supplier<MinecraftServer> serverSupplier;
     private final FabricCommandPlatform permissionPlatform;
-    private CommandDispatcher<ServerCommandSource> dispatcher;
+    private CommandDispatcher<CommandSourceStack> dispatcher;
     private Set<String> registered = new HashSet<>();
 
     AliasFabricRegistrar(AliasService aliasService, Supplier<MinecraftServer> serverSupplier) {
@@ -45,7 +46,7 @@ final class AliasFabricRegistrar {
         this.permissionPlatform = new FabricCommandPlatform();
     }
 
-    void registerDispatcher(CommandDispatcher<ServerCommandSource> dispatcher) {
+    void registerDispatcher(CommandDispatcher<CommandSourceStack> dispatcher) {
         this.dispatcher = dispatcher;
     }
 
@@ -87,16 +88,16 @@ final class AliasFabricRegistrar {
         registered = new HashSet<>();
     }
 
-    private void registerAlias(CommandDispatcher<ServerCommandSource> dispatcher, String alias) {
+    private void registerAlias(CommandDispatcher<CommandSourceStack> dispatcher, String alias) {
         if (dispatcher.getRoot().getChild(alias) != null) {
             return;
         }
 
-        LiteralArgumentBuilder<ServerCommandSource> root = LiteralArgumentBuilder.literal(alias);
+        LiteralArgumentBuilder<CommandSourceStack> root = LiteralArgumentBuilder.literal(alias);
         root.executes(context -> execute(alias, context.getSource(), ""));
 
-        RequiredArgumentBuilder<ServerCommandSource, String> argsNode = RequiredArgumentBuilder
-                .<ServerCommandSource, String>argument("args", StringArgumentType.greedyString())
+        RequiredArgumentBuilder<CommandSourceStack, String> argsNode = RequiredArgumentBuilder
+                .<CommandSourceStack, String>argument("args", StringArgumentType.greedyString())
                 .suggests((context, builder) -> suggest(alias, context, builder))
                 .executes(context -> execute(alias, context.getSource(),
                         StringArgumentType.getString(context, "args")));
@@ -105,32 +106,32 @@ final class AliasFabricRegistrar {
         dispatcher.register(root);
     }
 
-    private int execute(String alias, ServerCommandSource source, String args) {
+    private int execute(String alias, CommandSourceStack source, String args) {
         AliasService.AliasTarget target = aliasService.resolve(alias);
         if (target == null) {
-            source.sendError(net.minecraft.text.Text.literal("Unknown alias"));
+            source.sendFailure(Component.literal("Unknown alias"));
             return 0;
         }
         if (!hasPermission(source, target.permission())) {
-            source.sendError(net.minecraft.text.Text.literal("You do not have permission to use this alias"));
+            source.sendFailure(Component.literal("You do not have permission to use this alias"));
             return 0;
         }
 
         String commandLine = AliasCommandLine.buildCommandLine(target.target(), args);
         if (commandLine.isEmpty()) {
-            source.sendError(net.minecraft.text.Text.literal("Alias target is empty"));
+            source.sendFailure(Component.literal("Alias target is empty"));
             return 0;
         }
 
-        CommandManager manager = getCommandManager();
+        Commands manager = getCommands();
         if (manager == null) {
             return 0;
         }
-        manager.parseAndExecute(source, commandLine);
+        manager.performPrefixedCommand(source, commandLine);
         return 1;
     }
 
-    private CompletableFuture<Suggestions> suggest(String alias, CommandContext<ServerCommandSource> context,
+    private CompletableFuture<Suggestions> suggest(String alias, CommandContext<CommandSourceStack> context,
                                                    SuggestionsBuilder builder) {
         AliasService.AliasTarget target = aliasService.resolve(alias);
         if (target == null) {
@@ -140,7 +141,7 @@ final class AliasFabricRegistrar {
             return builder.buildFuture();
         }
 
-        CommandDispatcher<ServerCommandSource> localDispatcher = dispatcher;
+        CommandDispatcher<CommandSourceStack> localDispatcher = dispatcher;
         if (localDispatcher == null) {
             return builder.buildFuture();
         }
@@ -156,7 +157,7 @@ final class AliasFabricRegistrar {
                 });
     }
 
-    private boolean hasPermission(ServerCommandSource source, String permission) {
+    private boolean hasPermission(CommandSourceStack source, String permission) {
         if (permission == null || permission.isBlank()) {
             return true;
         }
@@ -168,12 +169,12 @@ final class AliasFabricRegistrar {
         if (server == null) {
             return;
         }
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            server.getCommandManager().sendCommandTree(player);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            server.getCommands().sendCommands(player);
         }
     }
 
-    private static void removeNode(CommandDispatcher<ServerCommandSource> dispatcher, String alias) {
+    private static void removeNode(CommandDispatcher<CommandSourceStack> dispatcher, String alias) {
         try {
             Object root = dispatcher.getRoot();
             if (!(root instanceof CommandNode<?> node)) {
@@ -194,11 +195,11 @@ final class AliasFabricRegistrar {
         }
     }
 
-    private CommandManager getCommandManager() {
+    private Commands getCommands() {
         MinecraftServer server = serverSupplier.get();
         if (server == null) {
             return null;
         }
-        return server.getCommandManager();
+        return server.getCommands();
     }
 }

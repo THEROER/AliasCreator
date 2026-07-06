@@ -5,7 +5,7 @@ import com.mojang.brigadier.tree.CommandNode;
 import dev.ua.theroer.aliascreator.common.CommandNameSelector;
 import dev.ua.theroer.aliascreator.common.TargetSuggestionProvider;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,7 +31,7 @@ public final class FabricTargetSuggestionProvider implements TargetSuggestionPro
         if (server == null) {
             return new ArrayList<>();
         }
-        CommandDispatcher<ServerCommandSource> dispatcher = server.getCommandManager().getDispatcher();
+        CommandDispatcher<CommandSourceStack> dispatcher = server.getCommands().getDispatcher();
         if (dispatcher == null) {
             return new ArrayList<>();
         }
@@ -40,10 +40,10 @@ public final class FabricTargetSuggestionProvider implements TargetSuggestionPro
         return CommandNameSelector.select(raw, identities, alwaysNamespaced.getAsBoolean());
     }
 
-    private List<String> collectNames(Collection<CommandNode<ServerCommandSource>> nodes,
+    private List<String> collectNames(Collection<CommandNode<CommandSourceStack>> nodes,
                                       Map<String, Object> identities) {
         List<String> names = new ArrayList<>();
-        for (CommandNode<ServerCommandSource> node : nodes) {
+        for (CommandNode<CommandSourceStack> node : nodes) {
             if (node == null) {
                 continue;
             }
@@ -52,7 +52,7 @@ public final class FabricTargetSuggestionProvider implements TargetSuggestionPro
                 continue;
             }
             names.add(name);
-            CommandNode<ServerCommandSource> identity = node.getRedirect() != null ? node.getRedirect() : node;
+            CommandNode<CommandSourceStack> identity = node.getRedirect() != null ? node.getRedirect() : node;
             identities.put(name, identity);
         }
         return names;

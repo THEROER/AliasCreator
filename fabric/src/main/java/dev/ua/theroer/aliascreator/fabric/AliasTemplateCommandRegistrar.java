@@ -14,8 +14,8 @@ import dev.ua.theroer.magicutils.commands.CommandResult;
 import dev.ua.theroer.magicutils.commands.CommandSpec;
 import dev.ua.theroer.magicutils.commands.MagicPermissionDefault;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -37,7 +37,7 @@ final class AliasTemplateCommandRegistrar {
     private final Logger magicLogger;
     private final int logLevel;
     private final Supplier<MinecraftServer> serverSupplier;
-    private CommandDispatcher<ServerCommandSource> dispatcher;
+    private CommandDispatcher<CommandSourceStack> dispatcher;
     private CommandRegistry templateRegistry;
     private Set<String> registered = new HashSet<>();
 
@@ -53,7 +53,7 @@ final class AliasTemplateCommandRegistrar {
         this.serverSupplier = serverSupplier;
     }
 
-    void registerDispatcher(CommandDispatcher<ServerCommandSource> dispatcher) {
+    void registerDispatcher(CommandDispatcher<CommandSourceStack> dispatcher) {
         this.dispatcher = dispatcher;
     }
 
@@ -98,8 +98,8 @@ final class AliasTemplateCommandRegistrar {
         registered = new HashSet<>();
     }
 
-    private CommandSpec<ServerCommandSource> buildSpec(String alias, AliasTemplateEntry entry) {
-        CommandSpec.Builder<ServerCommandSource> builder = CommandSpec.builder(alias);
+    private CommandSpec<CommandSourceStack> buildSpec(String alias, AliasTemplateEntry entry) {
+        CommandSpec.Builder<CommandSourceStack> builder = CommandSpec.builder(alias);
         String permission = normalizePermission(entry.getPermission());
         MagicPermissionDefault defaultValue = permission.isEmpty()
                 ? MagicPermissionDefault.TRUE
@@ -135,15 +135,15 @@ final class AliasTemplateCommandRegistrar {
         return builder.build();
     }
 
-    private CommandResult executeTemplate(CommandExecution<ServerCommandSource> execution,
+    private CommandResult executeTemplate(CommandExecution<CommandSourceStack> execution,
                                           AliasTemplateEntry entry) {
-        ServerCommandSource source = execution.sender();
+        CommandSourceStack source = execution.sender();
         String[] inputArgs = execution.rawArgs().toArray(new String[0]);
-        AliasTemplateResolver.Result result = AliasTemplateResolver.resolve(entry, inputArgs, source.getName());
+        AliasTemplateResolver.Result result = AliasTemplateResolver.resolve(entry, inputArgs, source.getTextName());
         if (!result.isSuccess()) {
             return CommandResult.failure(result.errorMessage(), false);
         }
-        source.getServer().getCommandManager().parseAndExecute(source, result.commandLine());
+        source.getServer().getCommands().performPrefixedCommand(source, result.commandLine());
         return CommandResult.success();
     }
 
@@ -152,12 +152,12 @@ final class AliasTemplateCommandRegistrar {
         if (server == null) {
             return;
         }
-        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            server.getCommandManager().sendCommandTree(player);
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            server.getCommands().sendCommands(player);
         }
     }
 
-    private static void removeNode(CommandDispatcher<ServerCommandSource> dispatcher, String alias) {
+    private static void removeNode(CommandDispatcher<CommandSourceStack> dispatcher, String alias) {
         try {
             Object root = dispatcher.getRoot();
             if (!(root instanceof CommandNode<?> node)) {

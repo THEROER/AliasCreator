@@ -5,15 +5,14 @@ import dev.ua.theroer.aliascreator.common.AliasService;
 import dev.ua.theroer.aliascreator.common.commands.AliasCommand;
 import dev.ua.theroer.aliascreator.common.config.AliasCreatorConfig;
 import dev.ua.theroer.magicutils.Logger;
+import dev.ua.theroer.magicutils.bootstrap.FabricBootstrap;
 import dev.ua.theroer.magicutils.commands.CommandRegistry;
 import dev.ua.theroer.magicutils.commands.HelpCommandSupport;
 import dev.ua.theroer.magicutils.config.ConfigManager;
-import dev.ua.theroer.magicutils.platform.fabric.FabricPlatformProvider;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -30,10 +29,16 @@ public final class AliasCreatorMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        FabricPlatformProvider platform = new FabricPlatformProvider(serverRef::get, LoggerFactory.getLogger("AliasCreator"));
-        configManager = new ConfigManager(platform);
+        FabricBootstrap.RuntimeResult bootstrap = FabricBootstrap.forMod("aliascreator", serverRef::get)
+                .permissionPrefix("aliascreator")
+                .opLevel(2)
+                .enableCommands()
+                .enableDiagnostics()
+                .buildRuntime();
+        configManager = bootstrap.configManager();
         config = configManager.register(AliasCreatorConfig.class);
-        magicLogger = new Logger(platform, configManager, "AliasCreator");
+        magicLogger = bootstrap.logger();
+        commandRegistry = bootstrap.commandRegistry();
 
         aliasService.replace(config.getAliases());
         aliasRegistrar = new AliasFabricRegistrar(aliasService, serverRef::get);
@@ -62,7 +67,6 @@ public final class AliasCreatorMod implements ModInitializer {
             }
         });
 
-        commandRegistry = CommandRegistry.create("aliascreator", "aliascreator", magicLogger, 2);
         templateRegistrar = new AliasTemplateCommandRegistrar("aliascreator", "aliascreator",
                 magicLogger, 2, serverRef::get);
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {

@@ -3,6 +3,10 @@ build/
 **/build/
 run/
 **/run/
+run-paper-*/
+**/run-paper-*/
+run-folia/
+**/run-folia/
 logs/
 **/logs/
 

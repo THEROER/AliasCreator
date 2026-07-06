@@ -1,9 +1,86 @@
 pluginManagement {
     repositories {
         gradlePluginPortal()
-        maven { url 'https://maven.fabricmc.net/' }
+        mavenLocal()
+        maven { url = 'https://maven.theroer.dev/releases' }
+        maven { url = 'https://maven.fabricmc.net/' }
+        maven { url = 'https://maven.neoforged.net/releases' }
+    }
+    plugins {
+        // MagicUtils build-logic, resolved from mavenLocal (local dev) or
+        // maven.theroer.dev (CI / other machines). matrix-* drive the build
+        // matrix + smoke/release; consumer-* wire each module to the active
+        // MagicUtils target (Loom flavour, mappings, classifier, toolchain).
+        def buildLogicVersion = providers.gradleProperty('magicutilsBuildLogicVersion').get()
+        id 'magicutils.matrix-settings' version buildLogicVersion
+        id 'magicutils.matrix-root' version buildLogicVersion
+        id 'magicutils.consumer-common' version buildLogicVersion
+        id 'magicutils.consumer-bukkit' version buildLogicVersion
+        id 'magicutils.consumer-fabric' version buildLogicVersion
+        // Loom versions so the consumer-fabric plugin can resolve whichever Loom
+        // id it applies for the target. Consumers never reference Loom directly.
+        def loomVersion = providers.gradleProperty('fabricLoomVersion').get()
+        id 'fabric-loom' version loomVersion
+        id 'net.fabricmc.fabric-loom' version loomVersion
     }
 }
 
+plugins {
+    id 'magicutils.matrix-settings'
+}
+
 rootProject.name = 'AliasCreator'
-include 'common', 'fabric', 'bukkit'
+
+// AliasCreator supports the MagicUtils compatibility range 1.21.6 .. 26.2. The
+// active target (Minecraft version, Java, Loom mode, MagicUtils classifier)
+// comes from gradle/targets.properties via -Ptarget=mcXXXX. The matrix plugin
+// includes the right subprojects for the requested scenario/platform and
+// exposes the resolved target to every module via the `magicutilsTarget`
+// extension (magicutils.target).
+magicMatrix {
+    targetsFile = 'gradle/targets.properties'
+    publishingFile = 'gradle/publishing.properties'
+    defaultTarget = 'mc12111'
+
+    // AliasCreator's own modules — no MagicUtils-style module-name remapping.
+    commonProjects('common')
+
+    platform 'bukkit', ['bukkit']
+    platform 'fabric', ['fabric']
+
+    scenario 'workspace', ['bukkit', 'fabric'], 'Full AliasCreator workspace'
+    scenario 'bukkit', ['bukkit'], 'Bukkit/Paper module'
+    scenario 'fabric', ['fabric'], 'Fabric module'
+
+    // Compatibility smoke: launch a real server per MC version and gate on the
+    // MagicUtils runtime diagnostics verdict. Both bukkit and fabric run the
+    // plugin/mod with /aliascreator + diagnostics wired through MagicUtils.
+    smoke { smoke ->
+        smoke.platform('bukkit') { p ->
+            p.runTask = ':bukkit:runServer --args=nogui'
+            p.successPattern = 'Done ('
+            p.entry('paper-121x') { e ->
+                e.versions = ['1.21.6-1.21.11']
+                e.smokeValues = ['1.21.11']
+            }
+            p.entry('paper-262') { e ->
+                e.versions = ['26.2']
+                e.smokeValues = ['26.2']
+                e.gradleProperties = ['target': 'mc262']
+            }
+        }
+        smoke.platform('fabric') { p ->
+            p.runTask = ':fabric:runServer'
+            p.successPattern = 'Done ('
+            p.entry('fabric-121x') { e ->
+                e.versions = ['1.21.6-1.21.11']
+                e.smokeValues = ['1.21.11']
+            }
+            p.entry('fabric-262') { e ->
+                e.versions = ['26.2']
+                e.smokeValues = ['26.2']
+                e.gradleProperties = ['target': 'mc262']
+            }
+        }
+    }
+}

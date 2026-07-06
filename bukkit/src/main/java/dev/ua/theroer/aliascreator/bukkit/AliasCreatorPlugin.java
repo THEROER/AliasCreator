@@ -5,10 +5,10 @@ import dev.ua.theroer.aliascreator.common.AliasService;
 import dev.ua.theroer.aliascreator.common.commands.AliasCommand;
 import dev.ua.theroer.aliascreator.common.config.AliasCreatorConfig;
 import dev.ua.theroer.magicutils.Logger;
+import dev.ua.theroer.magicutils.bootstrap.BukkitBootstrap;
 import dev.ua.theroer.magicutils.commands.CommandRegistry;
 import dev.ua.theroer.magicutils.commands.HelpCommandSupport;
 import dev.ua.theroer.magicutils.config.ConfigManager;
-import dev.ua.theroer.magicutils.platform.bukkit.BukkitPlatformProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class AliasCreatorPlugin extends JavaPlugin {
@@ -23,10 +23,15 @@ public final class AliasCreatorPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        BukkitPlatformProvider platform = new BukkitPlatformProvider(this);
-        configManager = new ConfigManager(platform);
+        BukkitBootstrap.RuntimeResult bootstrap = BukkitBootstrap.forPlugin(this)
+                .permissionPrefix("aliascreator")
+                .enableCommands()
+                .enableDiagnostics()
+                .buildRuntime();
+        configManager = bootstrap.configManager();
         config = configManager.register(AliasCreatorConfig.class);
-        logger = new Logger(platform, this, configManager);
+        logger = bootstrap.logger();
+        commandRegistry = bootstrap.commandRegistry();
 
         aliasService.replace(config.getAliases());
         aliasRegistrar = new AliasBukkitRegistrar(this, aliasService);
@@ -47,7 +52,6 @@ public final class AliasCreatorPlugin extends JavaPlugin {
             getLogger().info("Aliases reloaded (" + count + ").");
         });
 
-        commandRegistry = CommandRegistry.create(this, "aliascreator", logger);
         templateRegistrar = new AliasTemplateCommandRegistrar(commandRegistry);
         templateRegistrar.applyTemplates(config.getTemplateAliases());
         AliasCommand aliasCommand = new AliasCommand(controller,

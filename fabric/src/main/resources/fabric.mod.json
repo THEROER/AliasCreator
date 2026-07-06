@@ -13,11 +13,12 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.18.2",
-    "fabric": "*",
+    "fabricloader": ">=0.16.0",
     "fabric-api": "*",
-    "minecraft": ">=1.21.10 <=1.21.11",
-    "magicutils-fabric-bundle": ">=${magicutils_version}",
+    "minecraft": ">=1.21.6",
     "java": ">=21"
+  },
+  "suggests": {
+    "magicutils-fabric-bundle": ">=${magicutils_version}"
   }
 }
