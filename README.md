@@ -1,21 +1,21 @@
 # AliasCreator
 
-A Minecraft server plugin for creating **command aliases** — both simple
+A Minecraft server plugin for creating **command aliases**: both simple
 one-to-one shortcuts and templated aliases with arguments and placeholders.
 Built on [MagicUtils](https://github.com/THEROER/MagicUtils), so it runs on
 **Bukkit/Paper** and **Fabric** from a shared core, with **Folia** support.
 
 ## Features
 
-- **Simple aliases** — map one or more shortcuts to a target command, e.g.
+- **Simple aliases**: map one or more shortcuts to a target command, e.g.
   `hub` / `lobby` → `/server hub`.
-- **Template aliases** — aliases that take arguments and expand placeholders
+- **Template aliases**: aliases that take arguments and expand placeholders
   into a full command, e.g. `agive {item} {count}` →
   `minecraft:give @s minecraft:totem_of_undying[item_model="{item}"] {count}`.
-- **Per-alias permissions** — gate any alias behind a permission node.
-- **Live reload** — with `realtime: true`, edits to the config apply instantly,
+- **Per-alias permissions**: gate any alias behind a permission node.
+- **Live reload**: with `realtime: true`, edits to the config apply instantly,
   no restart required.
-- **Tab completion** — suggestions for alias names and target commands.
+- **Tab completion**: suggestions for alias names and target commands.
 
 ## Requirements
 
