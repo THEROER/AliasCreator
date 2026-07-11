@@ -1,0 +1,11 @@
+{
+  "id": "commandflow",
+  "name": "CommandFlow",
+  "version": "${version}",
+  "description": "${description}",
+  "authors": ["THEROER"],
+  "dependencies": [
+    { "id": "magicutils", "optional": true }
+  ],
+  "main": "dev.ua.theroer.commandflow.velocity.CommandFlowVelocityPlugin"
+}

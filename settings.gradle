@@ -29,9 +29,9 @@ plugins {
     id 'magicutils.matrix-settings'
 }
 
-rootProject.name = 'AliasCreator'
+rootProject.name = 'CommandFlow'
 
-// AliasCreator supports the MagicUtils compatibility range 1.21.6 .. 26.2. The
+// CommandFlow supports the MagicUtils compatibility range 1.21.6 .. 26.2. The
 // active target (Minecraft version, Java, Loom mode, MagicUtils classifier)
 // comes from gradle/targets.properties via -Ptarget=mcXXXX. The matrix plugin
 // includes the right subprojects for the requested scenario/platform and
@@ -42,19 +42,23 @@ magicMatrix {
     publishingFile = 'gradle/publishing.properties'
     defaultTarget = 'mc12111'
 
-    // AliasCreator's own modules — no MagicUtils-style module-name remapping.
+    // CommandFlow's own modules — no MagicUtils-style module-name remapping.
     commonProjects('common')
 
     platform 'bukkit', ['bukkit']
     platform 'fabric', ['fabric']
+    platform 'velocity', ['velocity']
+    platform 'bungee', ['bungee']
 
-    scenario 'workspace', ['bukkit', 'fabric'], 'Full AliasCreator workspace'
+    scenario 'workspace', ['bukkit', 'fabric', 'velocity', 'bungee'], 'Full CommandFlow workspace'
     scenario 'bukkit', ['bukkit'], 'Bukkit/Paper module'
     scenario 'fabric', ['fabric'], 'Fabric module'
+    scenario 'velocity', ['velocity'], 'Velocity proxy module'
+    scenario 'bungee', ['bungee'], 'BungeeCord/Waterfall proxy module'
 
     // Compatibility smoke: launch a real server per MC version and gate on the
     // MagicUtils runtime diagnostics verdict. Both bukkit and fabric run the
-    // plugin/mod with /aliascreator + diagnostics wired through MagicUtils.
+    // plugin/mod with /commandflow + diagnostics wired through MagicUtils.
     smoke { smoke ->
         smoke.platform('bukkit') { p ->
             p.runTask = ':bukkit:runServer --args=nogui'
@@ -81,6 +85,56 @@ magicMatrix {
                 e.smokeValues = ['26.2']
                 e.gradleProperties = ['target': 'mc262']
             }
+        }
+    }
+
+    // Modrinth release. `./gradlew publishToModrinth -Pversion=X.Y.Z`
+    // (token from MODRINTH_TOKEN) uploads one Modrinth version per artifact.
+    //
+    // Unlike MagicUtils, CommandFlow's jars are NOT named `<...>+<minecraft>`
+    // and each target overwrites `commandflow-<platform>-0.1.0.jar`, so the
+    // smoke-matrix synthesiser (which expects per-library bundle jar names)
+    // can't resolve them. We declare the artifacts explicitly, pointing at the
+    // staging copies produced by `stageModrinthJars` (modrinth-stage/*.jar):
+    // build each target, copy its jar under a target-tagged name, then publish.
+    // loaders are derived from `platform` (bukkit -> paper/purpur/spigot/bukkit
+    // /folia; fabric -> fabric/quilt); game_versions mirror the smoke matrix.
+    modrinth {
+        projectId = 'L2VDJvSF'
+        channel = 'beta'
+        featured = false
+
+        artifact('commandflow-bukkit-mc121') { a ->
+            a.file = 'modrinth-stage/commandflow-bukkit-mc1.21.jar'
+            a.platform = 'bukkit'
+            a.gameVersions = ['1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11']
+        }
+        artifact('commandflow-bukkit-mc26') { a ->
+            a.file = 'modrinth-stage/commandflow-bukkit-mc26.jar'
+            a.platform = 'bukkit'
+            a.gameVersions = ['26.2']
+        }
+        artifact('commandflow-fabric-mc121') { a ->
+            a.file = 'modrinth-stage/commandflow-fabric-mc1.21.jar'
+            a.platform = 'fabric'
+            a.gameVersions = ['1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11']
+        }
+        artifact('commandflow-fabric-mc26') { a ->
+            a.file = 'modrinth-stage/commandflow-fabric-mc26.jar'
+            a.platform = 'fabric'
+            a.gameVersions = ['26.2']
+        }
+        // Proxy modules are Minecraft-version-agnostic: one jar covers the whole
+        // supported range. loaders: velocity -> velocity; bungee -> bungeecord + waterfall.
+        artifact('commandflow-velocity') { a ->
+            a.file = 'modrinth-stage/commandflow-velocity.jar'
+            a.platform = 'velocity'
+            a.gameVersions = ['1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11', '26.2']
+        }
+        artifact('commandflow-bungee') { a ->
+            a.file = 'modrinth-stage/commandflow-bungee.jar'
+            a.platform = 'bungee'
+            a.gameVersions = ['1.21.6', '1.21.7', '1.21.8', '1.21.9', '1.21.10', '1.21.11', '26.2']
         }
     }
 }

@@ -5,7 +5,7 @@ plugins {
 }
 
 base {
-    archivesName = "aliascreator-bukkit"
+    archivesName = "commandflow-bukkit"
 }
 
 magicutilsConsumer {
@@ -18,10 +18,10 @@ magicutilsConsumer {
 }
 
 dependencies {
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.1")
-    implementation("com.fasterxml.jackson.core:jackson-core:2.17.1")
-    implementation("com.fasterxml.jackson.core:jackson-annotations:2.17.1")
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.1")
+    // jackson is provided at runtime by the MagicUtils bukkit-bundle plugin
+    // (its ConfigManager owns the YAML factories). Bundling and relocating our
+    // own copy produced two incompatible jackson packages and a ClassCastException
+    // under Paper's isolated classloaders, so we don't ship jackson here.
     implementation(project(":common"))
 }
 
@@ -29,7 +29,7 @@ tasks.processResources {
     val props = mapOf("version" to project.version)
     inputs.properties(props)
     filteringCharset = "UTF-8"
-    filesMatching("plugin.yml") {
+    filesMatching(listOf("plugin.yml", "paper-plugin.yml")) {
         expand(props)
     }
 }
@@ -42,7 +42,12 @@ tasks.named<Jar>("jar") {
 tasks.shadowJar {
     archiveClassifier = ""
     mergeServiceFiles()
-    relocate("com.fasterxml.jackson", "dev.ua.theroer.aliascreator.libs.jackson")
+    // MagicUtils runs as a separate server plugin (paper-plugin dependency,
+    // join-classpath) and owns its own relocated jackson. With
+    // `magicutils_embed=false` (EmbedMode.EXTERNAL) the consumer-bukkit plugin
+    // puts the MagicUtils modules on compileOnly and strips
+    // dev/ua/theroer/magicutils from the shadow jar itself, so no manual exclude
+    // is needed here and jackson never reaches this jar.
 }
 
 tasks.build {

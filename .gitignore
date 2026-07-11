@@ -3,6 +3,7 @@ build/
 **/build/
 run/
 **/run/
+modrinth-stage/
 run-paper-*/
 **/run-paper-*/
 run-folia/

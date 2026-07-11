@@ -1,0 +1,13 @@
+name: CommandFlow
+version: ${version}
+main: dev.ua.theroer.commandflow.bukkit.CommandFlowPlugin
+api-version: '1.21'
+author: THEROER
+description: Custom commands with action sequences, aliases and cross-server routing.
+folia-supported: true
+dependencies:
+  server:
+    MagicUtils:
+      load: BEFORE
+      required: true
+      join-classpath: true

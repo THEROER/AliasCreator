@@ -1,0 +1,5 @@
+name: CommandFlow
+main: dev.ua.theroer.commandflow.bungee.CommandFlowBungeePlugin
+version: ${version}
+author: THEROER
+description: ${description}

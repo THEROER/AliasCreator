@@ -6,7 +6,7 @@ plugins {
 }
 
 base {
-    archivesName = "aliascreator-fabric"
+    archivesName = "commandflow-fabric"
 }
 
 magicutilsConsumer {

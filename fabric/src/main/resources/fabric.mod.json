@@ -1,15 +1,15 @@
 {
   "schemaVersion": 1,
-  "id": "aliascreator",
+  "id": "commandflow",
   "version": "${version}",
-  "name": "AliasCreator",
-  "description": "Create command aliases.",
+  "name": "CommandFlow",
+  "description": "Custom commands with action sequences, aliases and cross-server routing.",
   "authors": ["THEROER"],
   "license": "MIT",
   "environment": "*",
   "entrypoints": {
     "main": [
-      "dev.ua.theroer.aliascreator.fabric.AliasCreatorMod"
+      "dev.ua.theroer.commandflow.fabric.CommandFlowMod"
     ]
   },
   "depends": {

@@ -5,10 +5,17 @@ plugins {
 }
 
 magicutilsConsumer {
-    api("magicutils-config", "magicutils-commands")
+    api("magicutils-config", "magicutils-commands", "magicutils-messaging")
 }
 
 dependencies {
     compileOnly("org.projectlombok:lombok:1.18.46")
     annotationProcessor("org.projectlombok:lombok:1.18.46")
+
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.9.2")
+}
+
+tasks.named<Test>("test") {
+    useJUnitPlatform()
 }
